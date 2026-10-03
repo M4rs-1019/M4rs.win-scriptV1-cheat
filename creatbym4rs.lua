@@ -474,7 +474,7 @@ do
 	local function applyRage(on)
 		getgenv().Config.Rage = on;
 		if on then
-			preRage = {FireRate=((Options.FireRate and Options.FireRate.Value) or 0.0005),RandomSpread=((Options.RandomSpread and Options.RandomSpread.Value) or 0.1),TeamCheck=((Toggles.TeamCheck and Toggles.TeamCheck.Value) ~= false),MaxDistance=((Options.MaxDistance and Options.MaxDistance.Value) or 500),HitPart=((Options.HitPartDropdown and Options.HitPartDropdown.Value) or "Head"),SilentAim=((Toggles.SilentAim and Toggles.SilentAim.Value) or false),Desync=((Toggles.Desync and Toggles.Desync.Value) ~= false)};
+			preRage = {FireRate=0.0005,RandomSpread=0.1,TeamCheck=((Toggles.TeamCheck and Toggles.TeamCheck.Value) ~= false),MaxDistance=500,HitPart=((Options.HitPartDropdown and Options.HitPartDropdown.Value) or "Head"),SilentAim=((Toggles.SilentAim and Toggles.SilentAim.Value) or false),Desync=((Toggles.Desync and Toggles.Desync.Value) ~= false)};
 			pcall(function()
 				if Toggles.SilentAim then
 					Toggles.SilentAim:SetValue(true);
@@ -484,16 +484,6 @@ do
 				end
 				if Toggles.TeamCheck then
 					Toggles.TeamCheck:SetValue(true);
-				end
-				if Options.FireRate then
-					Options.FireRate:SetValue(0.0001);
-				end
-				if Options.RandomSpread then
-					Options.RandomSpread:SetValue(0);
-				end
-				local rDist = (Options.RageTeleportDistance and Options.RageTeleportDistance.Value) or 200;
-				if Options.MaxDistance then
-					Options.MaxDistance:SetValue(rDist);
 				end
 				if Options.HitPartDropdown then
 					Options.HitPartDropdown:SetValue("Head");
@@ -518,15 +508,6 @@ do
 				end
 				if Toggles.TeamCheck then
 					Toggles.TeamCheck:SetValue(preRage.TeamCheck ~= false);
-				end
-				if Options.FireRate then
-					Options.FireRate:SetValue(preRage.FireRate or 0.0005);
-				end
-				if Options.RandomSpread then
-					Options.RandomSpread:SetValue(preRage.RandomSpread or 0.1);
-				end
-				if Options.MaxDistance then
-					Options.MaxDistance:SetValue(preRage.MaxDistance or 500);
 				end
 				if Options.HitPartDropdown then
 					Options.HitPartDropdown:SetValue(preRage.HitPart or "Head");
@@ -568,21 +549,6 @@ do
 			end
 		end});
 		silenttab:AddToggle("SilentWallCheck", {Text="wall check",Default=true,Tooltip="Obstacle check to prevent shooting through walls"});
-		silenttab:AddSlider("FireRate", {Text="fire rate",Default=0.0005,Min=0.0001,Max=1,Rounding=4,Suffix="s",Callback=function(v)
-			if getgenv().Config then
-				getgenv().Config.FireRate = v;
-			end
-		end});
-		silenttab:AddSlider("MaxDistance", {Text="max distance",Default=500,Min=10,Max=2000,Rounding=0,Suffix=" studs",Callback=function(v)
-			if getgenv().Config then
-				getgenv().Config.MaxDistance = v;
-			end
-		end});
-		silenttab:AddSlider("RandomSpread", {Text="random spread",Default=0.1,Min=0,Max=2,Rounding=2,Callback=function(v)
-			if getgenv().Config then
-				getgenv().Config.RandomSpread = v;
-			end
-		end});
 		silenttab:AddSlider("HitChance", {Text="hit chance",Default=100,Min=0,Max=100,Rounding=0,Compact=true,Callback=function(v)
 		end});
 		silenttab:AddDropdown("HitPartDropdown", {Text="hit part",Default=1,Values=HPlist,Callback=function(v)
@@ -593,9 +559,6 @@ do
 		silenttab:AddDropdown("TargetPriority", {Text="target priority",Default=1,Values={"Closest (Distance)","Lowest HP","Closest (FOV)"},Tooltip="Target priority: Distance, Lowest HP, or FOV"});
 		silenttab:AddSlider("HeadshotChance", {Text="headshot chance",Default=100,Min=0,Max=100,Rounding=0,Compact=true,Suffix="%"});
 		silenttab:AddToggle("Manipulation", {Text="manipulation (wall shoot)",Default=false,Tooltip="Scan vertical offsets to shoot around barriers"});
-		silenttab:AddToggle("IgnoreProtected", {Text="ignore protected",Default=true,Tooltip="Ignore spawn shield and invincibility"});
-		silenttab:AddToggle("KatanaCheck", {Text="ignore deflecting",Default=true,Tooltip="Do not shoot at katana users while deflecting"});
-		silenttab:AddToggle("RiotShieldCheck", {Text="ignore riot shield",Default=true,Tooltip="Do not shoot at riot shield users from the front"});
 		silentcustomization:AddToggle("ShowFOV", {Text="show fov",Default=false,Callback=function(v)
 		end}):AddColorPicker("FOVOutlineColor1", {Default=Color3.fromRGB(255, 255, 255),Title="outline color 1"}):AddColorPicker("FOVOutlineColor2", {Default=Color3.fromRGB(255, 255, 255),Title="outline color 2"});
 		silentcustomization:AddToggle("SilentFOVFilled", {Text="fov fill",Default=false,Callback=function(v)
@@ -1531,6 +1494,9 @@ do
 					if (oldCd and self.Info) then
 						self.Info.ShootCooldown = oldCd;
 					end
+					if (Toggles.NoSpread and Toggles.NoSpread.Value and typeof(res[3]) == "table") then
+						res[4] = true;
+					end
 					return unpack(res);
 				end;
 				local oldRecoil = GunModule._Recoil;
@@ -2066,7 +2032,7 @@ do
 			return nil, nil, nil;
 		end
 		local cP, cR, cH;
-		local cD = (Options.MaxDistance and Options.MaxDistance.Value) or (getgenv().Config and getgenv().Config.MaxDistance) or 500;
+		local cD = (getgenv().Config and getgenv().Config.MaxDistance) or 500;
 		local hitPartName = (Options.HitPartDropdown and Options.HitPartDropdown.Value) or (getgenv().Config and getgenv().Config.HitPart) or "Head";
 		local checkWall = Toggles.SilentWallCheck and Toggles.SilentWallCheck.Value and not (Toggles.TargetOn and Toggles.TargetOn.Value);
 		for _, p in ipairs(Players:GetPlayers()) do
@@ -2338,15 +2304,15 @@ do
 		local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart");
 		if not myRoot then return true end
 
-		local maxDist = (Options.MaxDistance and Options.MaxDistance.Value) or 500;
+		local maxDist = (getgenv().Config and getgenv().Config.MaxDistance) or 500;
 		if (root.Position - myRoot.Position).Magnitude > maxDist then return true end
 
 		local checkWall = Toggles.SilentWallCheck and Toggles.SilentWallCheck.Value;
 		if checkWall and not canSeeTarget(targetChar, targetPart) then return true end
 
-		if (Toggles.IgnoreProtected == nil or Toggles.IgnoreProtected.Value ~= false) and isProtectedTarget(targetChar) then return true end
-		if (Toggles.KatanaCheck == nil or Toggles.KatanaCheck.Value ~= false) and shouldBlockShotForKatana(targetChar) then return true end
-		if (Toggles.RiotShieldCheck == nil or Toggles.RiotShieldCheck.Value ~= false) and isBlockedByRiotShield(targetChar) then return true end
+		if isProtectedTarget(targetChar) then return true end
+		if shouldBlockShotForKatana(targetChar) then return true end
+		if isBlockedByRiotShield(targetChar) then return true end
 		if isFlashed() then return true end
 		return false;
 	end
@@ -3045,6 +3011,12 @@ do
 			end
 			PushHitNotification(enemyName, damage, isDead);
 		end
+		Hub.LastAttackTick = 0;
+		UserInputService.InputBegan:Connect(function(input, gp)
+			if (not gp and ((input.UserInputType == Enum.UserInputType.MouseButton1) or (input.UserInputType == Enum.UserInputType.Touch) or (input.KeyCode == Enum.KeyCode.ButtonR2))) then
+				Hub.LastAttackTick = tick();
+			end
+		end);
 		Hub.DamageBillboardConnection = workspace.DescendantAdded:Connect(function(obj)
 			if (not obj:IsA("BillboardGui") or (obj.Name == "FortniteDamageNumber")) then
 				return;
@@ -3054,7 +3026,18 @@ do
 				return;
 			end
 			local dmg = tonumber(lbl.Text);
-			if (dmg and (dmg > 0)) then
+			if (dmg and (dmg > 0) and (dmg <= 350)) then
+				if ((tick() - (Hub.LastAttackTick or 0)) > 1.2) then
+					return;
+				end
+				if not IsInMatch() then
+					return;
+				end
+				local checkAdornee = obj.Adornee or (obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent);
+				local checkPlayer = checkAdornee and checkAdornee.Parent and Players:GetPlayerFromCharacter(checkAdornee.Parent);
+				if (not checkPlayer or not isEnemy(checkPlayer)) then
+					return;
+				end
 				local enemyName = "Target";
 				local adornee = obj.Adornee or (obj.Parent and obj.Parent:IsA("BasePart") and obj.Parent);
 				local targetPart = (adornee and adornee:IsA("BasePart") and adornee) or nil;
@@ -3419,16 +3402,18 @@ do
 			table.clear(texture_originals);
 		end
 		local lastTexturesEnabled = false;
+		local lastTexSig = nil;
 		function UpdateTextures()
 			local enabled = (Toggles.world_textures_enable and Toggles.world_textures_enable.Value) or false;
-			if (enabled == lastTexturesEnabled) then
-			else
-				lastTexturesEnabled = enabled;
-				if enabled then
-					enableTextures();
-				else
-					disableTextures();
-				end
+			local sig = tostring(enabled) .. "|" .. tostring(Options.world_textures_material and Options.world_textures_material.Value) .. "|" .. tostring(Options.world_textures_color and Options.world_textures_color.Value) .. "|" .. tostring(Toggles.smooth_textures and Toggles.smooth_textures.Value) .. "|" .. tostring(Toggles.dark_textures and Toggles.dark_textures.Value) .. "|" .. tostring(Toggles.transparent_textures and Toggles.transparent_textures.Value) .. "|" .. tostring(Options.TransparentStrength and Options.TransparentStrength.Value);
+			if (sig == lastTexSig) then
+				return;
+			end
+			lastTexSig = sig;
+			disableTextures();
+			lastTexturesEnabled = enabled;
+			if enabled then
+				enableTextures();
 			end
 		end
 		Hub.UpdateTextures = UpdateTextures;
@@ -5518,34 +5503,60 @@ do
 		Misc.UnlockAllCosmeticsClient = UnlockAllCosmeticsClient;
 	end
 	local origColors = {};
-	local function UpdateTextures()
-		if (Toggles.smooth_textures and Toggles.smooth_textures.Value) then
-			pcall(function()
-				for _, v in ipairs(workspace:GetDescendants()) do
-					if (v:IsA("Texture") or v:IsA("Decal")) then
-						v.Transparency = 1;
-					elseif v:IsA("SurfaceAppearance") then
-						v:Destroy();
-					end
-				end
-			end);
-		end
-		if (Toggles.dark_textures and Toggles.dark_textures.Value) then
-			for _, part in ipairs(workspace:GetDescendants()) do
-				if (part:IsA("BasePart") and not (part.Parent and part.Parent:FindFirstChildOfClass("Humanoid"))) then
-					if not origColors[part] then
-						origColors[part] = part.Color;
-						part.Color = Color3.new(part.Color.R * 0.4, part.Color.G * 0.4, part.Color.B * 0.4);
-					end
-				end
+	local smoothHidden = {};
+	local texState = {smooth=false,dark=false,conn=nil,lastScan=0};
+	local function applyDarkSmoothTo(v)
+		if (texState.smooth and (v:IsA("Texture") or v:IsA("Decal"))) then
+			if smoothHidden[v] == nil then
+				smoothHidden[v] = v.Transparency;
+				v.Transparency = 1;
 			end
-		else
+		end
+		if (texState.dark and v:IsA("BasePart") and not (v.Parent and v.Parent:FindFirstChildOfClass("Humanoid"))) then
+			if not origColors[v] then
+				origColors[v] = v.Color;
+				v.Color = Color3.new(v.Color.R * 0.4, v.Color.G * 0.4, v.Color.B * 0.4);
+			end
+		end
+	end
+	local function UpdateTextures()
+		local smooth = (Toggles.smooth_textures and Toggles.smooth_textures.Value) or false;
+		local dark = (Toggles.dark_textures and Toggles.dark_textures.Value) or false;
+		if (smooth == texState.smooth and dark == texState.dark) then
+			return;
+		end
+		texState.smooth, texState.dark = smooth, dark;
+		if not smooth then
+			for v, tr in pairs(smoothHidden) do
+				if (v and v.Parent) then v.Transparency = tr; end
+			end
+			table.clear(smoothHidden);
+		end
+		if not dark then
 			for part, col in pairs(origColors) do
-				if (part and part.Parent) then
-					part.Color = col;
-				end
+				if (part and part.Parent) then part.Color = col; end
 			end
 			table.clear(origColors);
+		end
+		if (smooth or dark) then
+			task.spawn(function()
+				local n = 0;
+				for _, v in ipairs(workspace:GetDescendants()) do
+					pcall(applyDarkSmoothTo, v);
+					n = n + 1;
+					if (n % 400 == 0) then task.wait(); end
+				end
+			end);
+			if not texState.conn then
+				texState.conn = workspace.DescendantAdded:Connect(function(v)
+					if (texState.smooth or texState.dark) then
+						task.defer(function() pcall(applyDarkSmoothTo, v); end);
+					end
+				end);
+			end
+		elseif texState.conn then
+			texState.conn:Disconnect();
+			texState.conn = nil;
 		end
 	end
 	pcall(function()
@@ -5586,7 +5597,7 @@ do
 		end
 	end);
 	local lastSafeCFrame = nil;
-	local HeartbeatConnection = RunService.Heartbeat:Connect(function()
+	local HeartbeatConnection = RunService.Heartbeat:Connect(function(dt)
 		local char = LocalPlayer.Character;
 		if not char then
 			return;
@@ -5608,6 +5619,9 @@ do
 				local oldRotVel = root.RotVelocity;
 				undergroundSavedCF = oldCF;
 				root.CFrame = CFrame.new(root.Position.X, rayResult.Position.Y - 2, root.Position.Z) * (oldCF - oldCF.Position);
+				pcall(function()
+					RunService:UnbindFromRenderStep("__restore_underground");
+				end);
 				RunService:BindToRenderStep("__restore_underground", 101, function()
 					if root then
 						root.CFrame = oldCF;
@@ -5630,11 +5644,14 @@ do
 				root.Velocity = Vector3.new(hum.MoveDirection.X * speed, root.Velocity.Y, hum.MoveDirection.Z * speed);
 			end
 		end
-		if (Toggles.slide_boost and Toggles.slide_boost.Value and MechanicsController and MechanicsController.IsSliding) then
+		if (Toggles.slide_boost and Toggles.slide_boost.Value and MechanicsController) then
 			pcall(function()
 				local boost = (Options.slide_speed and Options.slide_speed.Value) or 300;
-				if (MechanicsController._sliding_velocity and (MechanicsController._sliding_velocity.Velocity.Magnitude > 0)) then
-					MechanicsController._sliding_velocity.Velocity = MechanicsController._sliding_velocity.Velocity.Unit * boost;
+				local sv = MechanicsController._sliding_velocity;
+				if (sv and sv.Parent) then
+					local cur = sv.Velocity;
+					local dir = (cur.Magnitude > 0.1) and cur.Unit or Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit;
+					sv.Velocity = dir * boost;
 				end
 			end);
 		end
@@ -6859,35 +6876,62 @@ do
 				cam.CFrame = CFrame.fromMatrix(cf.Position, cf.RightVector, cf.UpVector * ratio, -cf.LookVector);
 			end
 		end;
+		local lightingOriginal = {};
+		local lightingRules = {
+			{key="Ambient", tog="lighting_ambient", get=function() return Options.lighting_ambient_color and Options.lighting_ambient_color.Value end},
+			{key="OutdoorAmbient", tog="lighting_outdoorambient", get=function() return Options.lighting_outdoorambient_color and Options.lighting_outdoorambient_color.Value end},
+			{key="ColorShift_Top", tog="lighting_colorshifttop", get=function() return Options.lighting_colorshifttop_color and Options.lighting_colorshifttop_color.Value end},
+			{key="ColorShift_Bottom", tog="lighting_colorshiftbottom", get=function() return Options.lighting_colorshiftbottom_color and Options.lighting_colorshiftbottom_color.Value end},
+			{key="ClockTime", tog="lighting_clocktime", get=function() return Options.lighting_clocktime_value and Options.lighting_clocktime_value.Value end},
+			{key="GeographicLatitude", tog="lighting_latitude", get=function() return Options.lighting_latitude_value and Options.lighting_latitude_value.Value end},
+			{key="ShadowSoftness", tog="lighting_shadowsoftness", get=function() return Options.lighting_shadowsoftness_value and Options.lighting_shadowsoftness_value.Value end},
+			{key="EnvironmentDiffuseScale", tog="lighting_diffuse", get=function() return Options.lighting_diffuse_value and Options.lighting_diffuse_value.Value end},
+			{key="EnvironmentSpecularScale", tog="lighting_specular", get=function() return Options.lighting_specular_value and Options.lighting_specular_value.Value end},
+			{key="FogColor", tog="lighting_fog", get=function() return Options.lighting_fog_color and Options.lighting_fog_color.Value end},
+			{key="FogStart", tog="lighting_fog", get=function() return Options.lighting_fogstart and Options.lighting_fogstart.Value end},
+			{key="FogEnd", tog="lighting_fog", get=function() return Options.lighting_fogend and Options.lighting_fogend.Value end},
+		};
 		Hub.UpdateCustomLighting = function()
-			if (Toggles.lighting_master and Toggles.lighting_master.Value) then
-				if (Toggles.lighting_ambient and Toggles.lighting_ambient.Value and Options.lighting_ambient_color) then
-					Lighting.Ambient = Options.lighting_ambient_color.Value;
-				end
-				if (Toggles.lighting_outdoorambient and Toggles.lighting_outdoorambient.Value and Options.lighting_outdoorambient_color) then
-					Lighting.OutdoorAmbient = Options.lighting_outdoorambient_color.Value;
-				end
-				if (Toggles.lighting_colorshifttop and Toggles.lighting_colorshifttop.Value and Options.lighting_colorshifttop_color) then
-					Lighting.ColorShift_Top = Options.lighting_colorshifttop_color.Value;
-				end
-				if (Toggles.lighting_colorshiftbottom and Toggles.lighting_colorshiftbottom.Value and Options.lighting_colorshiftbottom_color) then
-					Lighting.ColorShift_Bottom = Options.lighting_colorshiftbottom_color.Value;
-				end
-				if (Toggles.lighting_clocktime and Toggles.lighting_clocktime.Value and Options.lighting_clocktime_value) then
-					Lighting.ClockTime = Options.lighting_clocktime_value.Value;
-				end
-				if (Toggles.lighting_fog and Toggles.lighting_fog.Value) then
-					if Options.lighting_fog_color then
-						Lighting.FogColor = Options.lighting_fog_color.Value;
+			local master = Toggles.lighting_master and Toggles.lighting_master.Value;
+			for _, rule in ipairs(lightingRules) do
+				pcall(function()
+					local t = Toggles[rule.tog];
+					local active = master and t and t.Value;
+					if active then
+						local v = rule.get();
+						if v == nil then return end
+						if lightingOriginal[rule.key] == nil then
+							lightingOriginal[rule.key] = Lighting[rule.key];
+						end
+						Lighting[rule.key] = v;
+					elseif lightingOriginal[rule.key] ~= nil then
+						Lighting[rule.key] = lightingOriginal[rule.key];
+						lightingOriginal[rule.key] = nil;
 					end
-					if Options.lighting_fogstart then
-						Lighting.FogStart = Options.lighting_fogstart.Value;
-					end
-					if Options.lighting_fogend then
-						Lighting.FogEnd = Options.lighting_fogend.Value;
-					end
-				end
+				end);
 			end
+			-- sun color is not a Lighting property in all games: tint via ColorCorrection-free fallback
+			pcall(function()
+				local active = master and Toggles.lighting_suncolor and Toggles.lighting_suncolor.Value;
+				local sky = Lighting:FindFirstChildOfClass("Atmosphere");
+				if (active and sky and Options.lighting_suncolor_color) then
+					if lightingOriginal.__AtmoColor == nil then lightingOriginal.__AtmoColor = sky.Color end
+					sky.Color = Options.lighting_suncolor_color.Value;
+				elseif (sky and lightingOriginal.__AtmoColor ~= nil) then
+					sky.Color = lightingOriginal.__AtmoColor;
+					lightingOriginal.__AtmoColor = nil;
+				end
+			end);
+			pcall(function()
+				local gs = Toggles.lighting_globalshadows;
+				if (master and gs) then
+					if lightingOriginal.__GS == nil then lightingOriginal.__GS = Lighting.GlobalShadows end
+					Lighting.GlobalShadows = gs.Value;
+				elseif lightingOriginal.__GS ~= nil then
+					Lighting.GlobalShadows = lightingOriginal.__GS;
+					lightingOriginal.__GS = nil;
+				end
+			end);
 		end;
 	end
 	do
@@ -7298,6 +7342,9 @@ do
 			Hub.CleanMuzzleFlash();
 		end
 		UpdateTextures();
+		if Hub.UpdateTextures then
+			Hub.UpdateTextures();
+		end
 		if (Toggles.AntiFlashbang and Toggles.AntiFlashbang.Value) then
 			PatchFlashbang();
 		end
